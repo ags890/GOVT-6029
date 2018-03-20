@@ -1,0 +1,237 @@
+---
+title: "Problem Set 2"
+subtitle: "GOVT 6029: Advanced Regression Analysis"
+author: "Ali Strongwater"
+date: "19 March 2018"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+sprinters <- read.csv("sprinters.csv", 
+             stringsAsFactors = FALSE, 
+             na.strings = ("."))
+```
+
+#Problem 1
+
+##Section 1
+
+#### In R, Create a matrix X comprised of three columns: a column of ones, a column made of the variable year, and a column made up of the variable women.
+
+```{r}
+a <- matrix(1, nrow=42)
+b <- matrix(sprinters$year)
+c <- matrix(sprinters$women)
+X = cbind(a, b, c)
+X
+```
+
+#### Create a matrix y comprised of a single column, made up of the variable finish.
+
+```{r}
+Y <- matrix(sprinters$finish)
+Y
+```
+
+#### Compute the following using R’s matrix commands (note that you will need to use the matrix multiplication operator `%*%`):
+
+$$b=(X′X)^{-1}X′y$$
+```{r}
+xder <- t(X)
+xder
+
+xderx <- t(X)%*%X
+xderx
+
+inverse <- solve(xderx)
+inverse
+
+b <- inverse%*%xder%*%Y
+
+```
+
+####Report the result of this calculation.
+
+```{r}
+b
+```
+
+##Section 2
+
+####Using the function `lm`, run a regression of `finish` on `year` and `women`.
+
+```{r}
+
+ModelA <- lm(finish ~ year + women, data = sprinters)
+ModelA
+```
+
+####Compare the results the calculation you did in Section 1.
+
+The answer for the equation in Section 1 is essentially the same as the result of the regression with a median of approximately 1.09 and an intercept of 34.96. 
+
+####Make a nice plot summarizing this regression. On a single graph, plot the data and the regression line. Make sure the graph is labeled nicely, so that anyone who does not know your variable names could still read it.
+
+```{r, warning=FALSE}
+
+ggplot(sprinters, aes(x = year+women, y = finish)) + 
+  geom_point() +
+  stat_smooth(method = "lm", col = "red")+ ggtitle("Best Olympic Time in Meter Sprint by Year") + labs(y= "Best Time in Seconds in the Meter Sprint", x = "Year of Competition by Sex") + scale_fill_continuous(name = "women", labels=c("women", "men"))+scale_color_continuous(name="women", labels=c("women", "men"))+theme_gray()
+```
+
+####Rerun the regression, adding an interaction between `women` and `year`.
+
+```{r}
+ModelB <- lm(sprinters$finish ~ sprinters$year+sprinters$women + sprinters$year*sprinters$women, data = sprinters, x=TRUE)
+ModelB
+```
+
+####Redo the plot with a new fit, one for each level of `women`.
+
+```{r}
+
+ggplot(sprinters, aes(x = year+women, y = finish, color = factor(women)), linetype=women) + 
+  geom_point() +
+  stat_smooth(method = "lm")+ ggtitle("Best Olympic Time in Meter Sprint by Year") + labs(y= "Best Time in Seconds in the Meter Sprint", x = "Year of Competition by Sex") + scale_fill_discrete(name = "women", labels=c("men", "women"))+scale_color_discrete(name="women", labels=c("men", "women"))+theme_gray()
+```
+
+##Section 3
+
+####Suppose that an Olympics had been held in 2001. Use the predict function to calculate the expected finishing time for men and for women. Calculate 95% confidence intervals for the predictions.
+
+```{r}
+Men2001 <- predict(ModelA, newdata = data_frame(year = 2001, women = 0), interval = "confidence", level = 0.95)
+summary(Men2001)
+
+Women2001 <- predict(ModelA, newdata = data_frame(year = 2001, women = 1), interval = "confidence", level = 0.95)
+summary(Women2001)
+```
+
+The predicted finish time for men in the 2001 Olympics is 9.729 seconds. The predicted finish time for women in the 2001 Olympics is 10.82 seconds.
+
+####The authors of the Nature article were interested in predicting the finishing times for the 2156 Olympics. Use `predict` to do so, for both men and women, and report 95% confidence intervals for your results.
+
+```{r}
+Men2156 <- predict(ModelA, newdata = data_frame(year = 2156, women = 0), interval = "confidence", level = 0.95)
+summary(Men2156)
+
+Women2156 <- predict(ModelA, newdata = data_frame(year = 2156, women = 1), interval = "confidence", level = 0.95)
+summary(Women2156)
+```
+
+The predicted finish time for men in the 2156 Olympics is 7.775 seconds. The predicted finish time for women in the 2156 Olympics is 8.868 seconds.
+
+####Do you trust the model’s predictions? Is there reason to trust the 2001 prediction more than the 2156 prediction? Is any assumption of the model being abused or overworked to make this prediction?
+
+I would not trust the model's 2156 prediction, although I would trust the 2001 prediction more than the 2156 prediction. The model implies that as time passes, finish times will continue to decrease, but there is an upper limit on the speed of human beings, and it is impossible for runners to have negative running times. 
+
+#Problem 2 
+
+```{r}
+data("anscombe")
+
+library("tidyverse")
+anscombe2 <- anscombe %>%
+    mutate(obs = row_number()) %>%
+    gather(variable_dataset, value, - obs) %>%
+    separate(variable_dataset, c("variable", "dataset"), sep = 1L) %>%
+    spread(variable, value) %>%
+    arrange(dataset, obs)
+```
+
+##Section 4
+
+####For each dataset: calculate the mean and standard deviations of x and y, and correlation between x and y.
+
+#####Dataset 1
+```{r}
+anscombe_dataset1 <-filter(anscombe2, anscombe2$dataset==1)
+mean(anscombe_dataset1$x)
+mean(anscombe_dataset1$y)
+sd(anscombe_dataset1$x)
+sd(anscombe_dataset1$y)
+cor(anscombe_dataset1$x, anscombe_dataset1$y)
+```
+
+#####Dataset 2
+```{r}
+anscombe_dataset2 <-filter(anscombe2, anscombe2$dataset==2)
+mean(anscombe_dataset2$x)
+mean(anscombe_dataset2$y)
+sd(anscombe_dataset2$x)
+sd(anscombe_dataset2$y)
+cor(anscombe_dataset2$x, anscombe_dataset2$y)
+```
+
+#####Dataset 3 
+```{r}
+anscombe_dataset3 <-filter(anscombe2, anscombe2$dataset==3)
+mean(anscombe_dataset3$x)
+mean(anscombe_dataset3$y)
+sd(anscombe_dataset3$x)
+sd(anscombe_dataset3$y)
+cor(anscombe_dataset3$x, anscombe_dataset3$y)
+```
+
+#####Dataset 4 
+```{r}
+anscombe_dataset4 <-filter(anscombe2, anscombe2$dataset==4)
+mean(anscombe_dataset4$x)
+mean(anscombe_dataset4$y)
+sd(anscombe_dataset4$x)
+sd(anscombe_dataset4$y)
+cor(anscombe_dataset4$x, anscombe_dataset4$y)
+```
+
+####Run a linear regression between x and y for each dataset.
+
+```{r}
+
+regans1 <- lm(anscombe_dataset1$y ~ anscombe_dataset1$x)
+regans2 <- lm(anscombe_dataset2$y ~ anscombe_dataset2$x)
+regans3 <- lm(anscombe_dataset3$y ~ anscombe_dataset3$x)
+regans4 <- lm(anscombe_dataset4$y ~ anscombe_dataset4$x)
+
+summary(regans1)
+summary(regans2)
+summary(regans3)
+summary(regans4)
+
+```
+
+####How similar do you think that these datasets will look?
+
+Given that the mean, standard deviation, and correlation are similar, my assumption would be that the datatsets would look similar as well.
+
+####Create a scatter plot of each dataset and its linear regression fit. Hint: you can do this easily with `facet_wrap`.
+
+```{r}
+scatter_anscombe <- ggplot (anscombe2, aes(x, y))
+scatter_anscombe + geom_point() + stat_smooth(method = "lm", se = FALSE) + facet_wrap(~dataset) 
+```
+
+####How do we make sense of these plots?
+
+Viewing the data as graphs allows us to check the linearity. 
+
+#Problem 3
+
+## Section 5 
+
+####Describe your data. Do you have it in a form that you can load it into R? What variables does it include? What are their descriptions and types?
+
+I will be using Andrew Walder's Cultural Revolution Dataset, which is currently in dta form but is easily convertible to R. I will also be using the Global Database of Events, Language, and Tone data on protest in China. Walder's dataset consists of a variety of variables, but I am primarily concerned with the number of deaths that are attributable to political actions of any kind, injuries, and victims - defined as "someone who is arrested, interrogated, beaten, put through a struggle session, investigated as a suspect of a political crime, imprisoned, criticized for a political problem, bad classbackground, incorrect attitudes, and so forth" (Codebook, p. 3). For the Global Database of Events, I will be using the number of protests in China per province from April 2013 (the start of the data) to present time. 
+
+####Describe, in as precise terms as possible, the distribution of the outcome variable you plan to use. If you have the data in hand, a histogram would be ideal; if you do not, give a verbal description of what you expect the distribution to look like. Be sure to indicate if the data are continuous or categorical.
+
+I am still waiting on the GDELT data to be sent to myself, but I expect the distribution on the range of protests to range from no protest to numbers within the dozen. This data would be continuous. 
+
+####What challenges would your data pose for analysis by least squares regression? Be sure to discuss any potential violations of the assumptions of the GaussMarkov theorem, as well as any other complications or difficulties you see in modeling your data.
+
+In this case, multicollinearity is a concern, as there are many other factors besides historical experience under the Cultural Revolution that will impact protest occurrence. In addition, the relatively short period of available data may not encompass the full range of protest in China. In addition, there are likely several unreported incidents. 
